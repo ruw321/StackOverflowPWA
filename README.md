@@ -94,7 +94,8 @@ LEFT JOIN rep_badge
 ON halfResult.OwnerUserId = rep_badge.userID`
 ```
 
-### Question 2 (it has been tested already):
+### Question 2 (it has been tested already): 
+* See the result of the query [here](https://github.com/ruw321/StackOverflowPWA/blob/master/Question2_Answer.png)
 ```SQL
 WITH tmp AS 
   (SELECT DATENAME(WEEKDAY, CreationDate) AS Day_of_the_week, Id, PostTypeId 
