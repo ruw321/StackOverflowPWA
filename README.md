@@ -6,6 +6,7 @@
 * Since I had experience developing React App, I chose to make an React Progressive Web App
 * In order to open the database mdf file, I had to use MSSQL, however, since I have a Macbook, so I had to use the Docker
 * I wasted too much time setting up the environment, so I did not have enough time to implemente the push notification
+* The page I wrote is in the Page 1 component, the directory is client/src/pages/Page1
 
 ## How to run this project:
 ### Backend:
@@ -94,8 +95,7 @@ LEFT JOIN rep_badge
 ON halfResult.OwnerUserId = rep_badge.userID`
 ```
 
-### Question 2 (it has been tested already): 
-* See the result of the query [here](https://github.com/ruw321/StackOverflowPWA/blob/master/Question2_Answer.png)
+### Question 2 (it has been tested already):
 ```SQL
 WITH tmp AS 
   (SELECT DATENAME(WEEKDAY, CreationDate) AS Day_of_the_week, Id, PostTypeId 
@@ -148,3 +148,50 @@ ORDER BY Upvotes_to_Downvotes_ratio DESC
 ```
 
 ### Question 3
+* Since there is no obvious definition of an active user, so I decided that the user who created a post during the time frame would be an active user. 
+
+```sql
+WITH postDate AS
+(SELECT CONVERT(varchar(100),(dateadd(DAY, -(datepart(weekday, CreationDate)+1), CreationDate)), 111) AS 
+    first_date_of_the_week, Id, PostTypeId, OwnerUserId
+FROM Posts),
+    question AS
+(SELECT first_date_of_the_week, COUNT(*) AS Count_of_questions
+FROM postDate
+WHERE PostTypeId = 1
+GROUP BY first_date_of_the_week),
+    answer AS
+(SELECT first_date_of_the_week, COUNT(*) AS Count_of_answers
+FROM postDate
+WHERE PostTypeId = 2
+GROUP BY first_date_of_the_week),
+    accepted AS
+(SELECT first_date_of_the_week, COUNT(*) AS Count_of_accepted_answers
+FROM postDate
+WHERE PostTypeId = 1 AND AcceptedAnswerId > 0
+GROUP BY first_date_of_the_week),
+    totalVotes AS
+(SELECT first_date_of_the_week, COUNT(*) AS Count_of_votes
+FROM postDate JOIN Votes ON Votes.PostId = postDate.Id
+GROUP BY first_date_of_the_week),
+    userDate AS
+(SELECT CONVERT(varchar(100),(dateadd(DAY, -(datepart(weekday, CreationDate)+1), CreationDate)), 111) AS first_date_of_the_week, Id
+FROM Users),
+    newUsers AS
+(SELECT first_date_of_the_week, COUNT(*) AS Count_of_new_users
+FROM userDate
+GROUP BY first_date_of_the_week),
+    activeUsers AS
+(SELECT first_date_of_the_week, COUNT(DISTINCT OwnerUserId) AS Count_of_active_users
+FROM postDate
+GROUP BY first_date_of_the_week)
+SELECT T1.first_date_of_the_week,T1.Count_of_questions, T2.Count_of_answers, T3.Count_of_accepted_answers,  
+    T4.Count_of_votes, T5.Count_of_new_users,T6.Count_of_active_users
+FROM question T1 FULL OUTER JOIN answer T2 ON T2.first_date_of_the_week = T1.first_date_of_the_week
+    FULL OUTER JOIN accepted T3 ON T3.first_date_of_the_week = T1.first_date_of_the_week
+    FULL OUTER JOIN totalVotes T4 ON T4.first_date_of_the_week = T1.first_date_of_the_week
+    FULL OUTER JOIN newUsers T5 ON T5.first_date_of_the_week = T1.first_date_of_the_week
+    FULL OUTER JOIN activeUsers T6 ON T6.first_date_of_the_week = T1.first_date_of_the_week
+ORDER BY first_date_of_the_week
+```
+
